@@ -23,7 +23,7 @@ class AppServiceProvider extends ServiceProvider
             $switch
                 ->locales(['es','en']) // also accepts a closure
                 ->excludes([
-                    'admin'
+                    'admin','personal'
                 ]);
         });
 
