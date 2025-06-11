@@ -17,7 +17,10 @@ class ReschedulingResource extends Resource
 {
     protected static ?string $model = Rescheduling::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-clock';
+
+    protected static ?string $navigationLabel = 'Reagendamentos';
+    protected static ?string $modelLabel = 'Reagendamiento';
 
     public static function form(Form $form): Form
     {

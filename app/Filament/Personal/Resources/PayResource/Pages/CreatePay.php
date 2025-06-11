@@ -6,24 +6,33 @@ use App\Filament\Personal\Resources\PayResource;
 use App\Models\Appointment;
 use Filament\Actions;
 use Filament\Resources\Pages\CreateRecord;
-
+use Illuminate\Support\Facades\Auth;
+use Filament\Notifications\Notification;
 class CreatePay extends CreateRecord
 {
     protected static string $resource = PayResource::class;
 
     protected function mutateFormDataBeforeCreate(array $data): array
 {
-    $user = auth()->user();
+    $data['user_id'] = Auth::user()->id;
+    $data['appointment_id'] = Appointment::where('id', $data['appointment_id'])->first()->id;
 
-    if ($user->user_type === 'appointment') {
-        // Aquí debes decidir cómo obtener el appointment_id relacionado.
-        // Por ejemplo, si tiene uno asociado directamente:
-        $data['appointment_id'] = Appointment::where('user_id', $user->id)->latest()->first()?->id;
-    }
 
-    $data['payment_date'] = now();
+    $recipient = Auth::user();
+
+    Notification::make()
+            ->title('Pago Realizado')
+            ->warning()
+            ->body("El pago de " .$data['amount']. ' BS  en la fecha '. $data['payment_date']. "  ha sido realizado con exito")
+            ->sendToDatabase($recipient)
+            ->send();
 
     return $data;
+}
+
+protected function getRedirectUrl(): string
+{
+    return static::getResource()::getUrl('index');
 }
 
 }

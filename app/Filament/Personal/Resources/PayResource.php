@@ -4,6 +4,7 @@ namespace App\Filament\Personal\Resources;
 
 use App\Filament\Personal\Resources\PayResource\Pages;
 use App\Filament\Personal\Resources\PayResource\RelationManagers;
+use App\Models\Appointment;
 use App\Models\Pay;
 use App\Models\User;
 use Filament\Forms;
@@ -19,36 +20,40 @@ class PayResource extends Resource
 {
     protected static ?string $model = Pay::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-credit-card';
+    protected static ?string $navigationLabel = 'Pagos';
+    protected static ?string $modelLabel = 'Pago';
 
     public static function form(Form $form): Form
     {
-        $user = Auth::user();
-        $isPersonal = $user->user_type === 'personal';
+
 
         return $form
-            ->schema([
-                Forms\Components\Select::make('patient_id')
-                ->label('Paciente')
-                ->options(User::where('user_type', 'patient')->pluck('name', 'id')->toArray())
-                    ->default(Auth::user()->id)
-                    // ->disabled()
-                    ->hidden()
-                    // ->dehydrated()
-                    ->required(),
-                Forms\Components\Select::make('therapist_id')
-                ->label('Terapeuta')
-                ->options(User::where('user_type', 'therapist')->pluck('name', 'id')->toArray())
-                ->prefixicon('heroicon-o-user')
-                ->hidden()
-                    ->required(),
+        ->schema([
+        Forms\Components\Select::make('appointment_id')
+        ->label('Nombre')
+        ->options(
+                  Appointment::with('patient')
+                      ->get()
+                      ->mapWithKeys(function ($appointment) {
+                          return [
+                              $appointment->id => $appointment->patient->name
+                          ];
+                      })
+                      ->toArray()
+                )
+
+        ->placeholder('Seleccione un paciente')
+        ->required(),
+
+
                 Forms\Components\TextInput::make('amount')
                     ->label('Monto')
                     ->prefix('Bs')
                     ->placeholder('0.00')
                     ->required()
-                    ->numeric()
-                    ->disabled($isPersonal), // Solo editable por admin
+                    ->numeric(),
+                    // ->disabled($isPersonal), // Solo editable por admin
                 Forms\Components\Select::make('payment_method')
                     ->label('Método de pago')
                     ->options([
@@ -57,8 +62,8 @@ class PayResource extends Resource
                         'transferencia QR' => 'Transferencia QR',
                     ])
                     ->placeholder('---')
-                    ->required()
-                    ->disabled($isPersonal), // Solo editable por admin
+                    ->required(),
+                    // ->disabled($isPersonal), // Solo editable por admin
                 Forms\Components\DatePicker::make('payment_date')
                     ->label('Fecha de pago')
                     ->default(now()->toDateString())
@@ -67,49 +72,54 @@ class PayResource extends Resource
             ]);
     }
 
+
+
+
     public static function table(Table $table): Table
     {
-        return $table
-        ->columns([
-            Tables\Columns\TextColumn::make('appointment.patient.name')
-                ->label('Paciente')
+      return $table
+            ->columns([
+                Tables\Columns\TextColumn::make('appointment.patient.name')
+                    ->label('Paciente')
 
-                ->icon('heroicon-m-user')
-                ->searchable()
-                ->sortable(),
-            Tables\Columns\TextColumn::make('amount')
-                ->label('Monto')
-                ->numeric()
-                ->sortable()
-                ->searchable(),
-            Tables\Columns\TextColumn::make('payment_method')
-                ->label('Método de pago')
-                ->searchable()
-                ->sortable(),
-            Tables\Columns\TextColumn::make('payment_date')
-                ->label('Fecha de pago')
-                ->date()
-                ->sortable(),
-            Tables\Columns\TextColumn::make('created_at')
-                ->dateTime()
-                ->sortable()
-                ->toggleable(isToggledHiddenByDefault: true),
-            Tables\Columns\TextColumn::make('updated_at')
-                ->dateTime()
-                ->sortable()
-                ->toggleable(isToggledHiddenByDefault: true),
-        ])
+                    ->icon('heroicon-m-user')
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('amount')
+                    ->label('Monto')
+                    ->numeric()
+                    ->sortable()
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('payment_method')
+                    ->label('Método de pago')
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('payment_date')
+                    ->label('Fecha de pago')
+                    ->date()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('created_at')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('updated_at')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+            ])
             ->filters([
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\ViewAction::make(),
+                // Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
-            ]);
+            ])
+            ->recordUrl(null);
     }
 
     public static function getRelations(): array
