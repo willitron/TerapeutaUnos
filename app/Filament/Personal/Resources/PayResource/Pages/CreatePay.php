@@ -14,8 +14,8 @@ class CreatePay extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
 {
-    $data['user_id'] = Auth::user()->id;
-    $data['appointment_id'] = Appointment::where('id', $data['appointment_id'])->first()->id;
+    // $data['user_id'] = Auth::user()->id;
+    // $data['appointment_id'] = Appointment::where('id', $data['appointment_id'])->first()->id;
 
 
     $recipient = Auth::user();
@@ -24,7 +24,8 @@ class CreatePay extends CreateRecord
             ->title('Pago Realizado')
             ->warning()
             ->body("El pago de " .$data['amount']. ' BS  en la fecha '. $data['payment_date']. "  ha sido realizado con exito")
-            ->sendToDatabase($recipient)
+            // ->sendToDatabase($recipient)
+            ->duration(8000)
             ->send();
 
     return $data;
