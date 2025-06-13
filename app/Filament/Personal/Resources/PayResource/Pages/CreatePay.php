@@ -25,7 +25,7 @@ class CreatePay extends CreateRecord
             ->warning()
             ->body("El pago de " .$data['amount']. ' BS  en la fecha '. $data['payment_date']. "  ha sido realizado con exito")
             // ->sendToDatabase($recipient)
-            ->duration(8000)
+            ->duration(10000)
             ->send();
 
     return $data;

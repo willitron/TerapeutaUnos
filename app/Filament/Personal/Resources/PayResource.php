@@ -24,6 +24,15 @@ class PayResource extends Resource
     protected static ?string $navigationLabel = 'Pagos';
     protected static ?string $modelLabel = 'Pago';
 
+ //!PARA LAS CONSULTAS PERSONALIZADAS
+ public static function getEloquentQuery(): Builder
+{
+    return parent::getEloquentQuery()
+        ->whereHas('appointment', function ($query) {
+            $query->where('patient_id', Auth::id());
+        });
+}
+
     public static function form(Form $form): Form
     {
 
@@ -57,18 +66,113 @@ class PayResource extends Resource
                 Forms\Components\Select::make('payment_method')
                     ->label('Método de pago')
                     ->options([
-                        'efectivo' => 'Efectivo',
+                        // 'efectivo' => 'Efectivo',
                         'tarjeta' => 'Tarjeta',
                         'transferencia QR' => 'Transferencia QR',
                     ])
                     ->placeholder('---')
+                    ->reactive()
+                    ->afterStateUpdated(fn (callable $set) => $set('show_qr', true))
+                    // ->visible(fn (callable $get) => $get('payment_method') === 'transferencia QR')
                     ->required(),
                     // ->disabled($isPersonal), // Solo editable por admin
-                Forms\Components\DatePicker::make('payment_date')
+
+
+                    Forms\Components\DatePicker::make('payment_date')
                     ->label('Fecha de pago')
                     ->default(now()->toDateString())
                     ->readOnly()
                     ->required(),
+
+
+                    Forms\Components\Hidden::make('show_qr'),
+
+                    Forms\Components\View::make('components.qr-preview')
+    ->visible(fn (callable $get) => $get('payment_method') === 'transferencia QR'),
+
+
+
+
+
+    //!Cuidamos con la vista que solo sea visible cuando el metodo de pago con tarjeta
+    Forms\Components\Wizard::make([
+        Forms\Components\Wizard\Step::make('Orden')->schema([
+            Forms\Components\Select::make('Tipo de documento')
+                ->label('Seleccione el tipo de documento')
+                ->options([
+                    'CI' => 'Carnet de Identidad',
+                    'passport' => 'Pasaporte',
+                ])
+                ->required(),
+            Forms\Components\TextInput::make('Cedula')
+                ->label('Cedula de identidad')
+                ->numeric()
+                ->validationMessages([
+                    'numeric' => 'Ingrese Datos Reales',
+                ])
+                ->required(),
+            Forms\Components\DatePicker::make('Fecha Nac')
+                ->label('Fecha de Nacimiento')
+                ->date()
+                ->required(),
+            Forms\Components\TextInput::make('Nombre')
+                ->label('Nombre')
+                ->required(),
+            Forms\Components\TextInput::make('ApellidoPat')
+                ->label('Apellido Paterno')
+                ->required(),
+            Forms\Components\TextInput::make('ApellidoMat')
+                ->label('Apellido Materno')
+                ->required(),
+            Forms\Components\TextInput::make('Correo')
+                ->label('Correo Electronico')
+                ->email()
+                ->placeholder('mauricio@gmail.com')
+                ->required(),
+        ]),
+        Forms\Components\Wizard\Step::make('Datos de Tarjeta')->schema([
+            Forms\Components\Select::make('tipoBank')
+                ->label('Seleccione su Banco')
+                ->options([
+                    'BNB' => 'BNB',
+                    'Banco Sol' => 'BANCO SOL',
+                    'BCP' => 'BCP',
+                    'BANCO GANADERO' => 'BANCO GANADERO',
+                    'BANCO FIE' => 'BANCO FIE',
+                ])
+                ->required(),
+            Forms\Components\TextInput::make('numeroTarjeta')
+                ->label('Número de Tarjeta')
+                ->numeric()
+                ->required(),
+            Forms\Components\DatePicker::make('fechaTarjeta')
+                ->label('Fecha de Expiración')
+                ->date()
+                ->required(),
+            Forms\Components\TextInput::make('cvv')
+                ->label('CVV')
+                ->numeric()
+                ->required(),
+        ]),
+        Forms\Components\Wizard\Step::make('Verificación')->schema([
+            Forms\Components\TextInput::make('billing_code')
+                ->label('Código de verificación')
+                ->required(),
+        ]),
+        ])->visible(fn (callable $get) => $get('payment_method') === 'tarjeta')
+
+        ->visible(function (callable $get, $livewire) {
+            return $get('payment_method') === 'tarjeta'
+                && ($livewire instanceof \Filament\Resources\Pages\CreateRecord
+                || $livewire instanceof \Filament\Resources\Pages\EditRecord);
+        })
+
+
+                // Forms\Components\DatePicker::make('payment_date')
+                //     ->label('Fecha de pago')
+                //     ->default(now()->toDateString())
+                //     ->readOnly()
+                //     ->required(),
             ]);
     }
 
